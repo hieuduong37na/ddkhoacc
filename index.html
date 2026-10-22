@@ -259,7 +259,7 @@ function qview(){
 }
 function ask(){var un=0;E.qs.forEach(function(_,i){if(E.ans[i]===undefined)un++});
   if(un&&!confirm("Còn "+un+" câu chưa trả lời. Bạn vẫn muốn "+(E.mode==="t"?"nộp bài":"kết thúc")+"?"))return;finish(false)}
-function finish(auto){E.done=true;E.secs=(Date.now()-E.t0)/1000;clearInterval(TM);if(auto)alert("Hết giờ, bài thi được nộp tự động.");result()}
+function finish(auto){E.done=true;E.secs=(Date.now()-E.t0)/1000;clearInterval(TM);if(auto)alert("Hết giờ, bài thi được nộp tự động.");result();saveTong()}
 function result(){
   var N=E.qs.length,ok=0,by={},wrong=[];
   E.qs.forEach(function(q,i){var b=by[q.id]||(by[q.id]={n:0,ok:0});b.n++;if(E.ans[i]===q.c){ok++;b.ok++}else wrong.push(i)});
@@ -373,12 +373,23 @@ body.xq #quiz{display:block!important;position:static!important;max-height:none!
 `;
 function xInit(){
   var $=function(i){return document.getElementById(i)};
-  var armed=0;
+  var armed=0,t0=0,sent=false;
   function post(on){try{parent.postMessage({yt:"full",on:on},"*")}catch(e){}}
   function reset(){try{setup()}catch(e){}window.scrollTo(0,0)}
   function inprog(){var b=$("box"),r=$("res");return !!b&&!$("sel-c")&&!b.classList.contains("hide")&&!!r&&r.classList.contains("hide")}
   function openQ(){document.body.classList.add("xq");reset();post(true)}
   function closeQ(){document.body.classList.remove("xq");reset();post(false)}
+  function report(){
+    if(sent||!Q||!Q.length)return;sent=true;
+    var L="ABCD",wrong=[],ans=[];
+    Q.forEach(function(q,j){var a=AN[j],ok=a===q[2];ans.push((j+1)+":"+(a==null?"-":L[a])+(ok?"✓":"✗"));if(!ok)wrong.push(String(q[3]||"").replace(/\.$/,""))});
+    var cat=(CFG&&CFG.c&&CN[CFG.c])?CN[CFG.c]:"Tất cả chủ đề";
+    var r={score:sc,total:Q.length,mode:(mode==="t"?"Thi tính giờ":"Luyện tập")+" · "+cat,secs:t0?Math.round((Date.now()-t0)/1000):0,ans:ans,extra:wrong.join("; ")};
+    var box=$("res");if(box){var p=document.createElement("div");p.className="sub";p.id="xsv";p.textContent="☁️ Đang lưu kết quả vào hệ thống…";box.appendChild(p)}
+    try{parent.postMessage({yt:"result",r:r},"*")}catch(e){}
+  }
+  var _start=window.start;window.start=function(){t0=Date.now();sent=false;return _start.apply(this,arguments)};
+  var _fin=window.fin;window.fin=function(){var r=_fin.apply(this,arguments);try{report()}catch(e){}return r};
   var m=/\((\d+)\s*câu/.exec(($("t2")||{}).textContent||"");
   if(m)$("xn").textContent=m[1]+" câu";
   var h=document.querySelector("main>h1");$("xt").textContent="📝 Trắc nghiệm · "+(h?h.textContent:"");
@@ -386,7 +397,9 @@ function xInit(){
   $("xexit").onclick=function(){var b=this;
     if(inprog()&&!armed){armed=1;b.textContent="Bấm lần nữa để thoát (mất bài đang làm)";setTimeout(function(){armed=0;b.textContent="← Thoát bài thi"},3500);return}
     armed=0;b.textContent="← Thoát bài thi";closeQ()};
-  window.addEventListener("message",function(e){if(e.data&&e.data.yt==="exit"&&document.body.classList.contains("xq")){document.body.classList.remove("xq");reset()}});
+  window.addEventListener("message",function(e){var d=e.data;if(!d)return;
+    if(d.yt==="exit"&&document.body.classList.contains("xq")){document.body.classList.remove("xq");reset()}
+    if(d.yt==="saved"){var s=$("xsv");if(s)s.textContent=d.ok?"✅ Đã gửi kết quả vào Google Sheets.":"⚠️ Chưa gửi được kết quả (lỗi mạng). Kết quả bài này chưa được ghi."}});
 }
 var XSTART='<div id="xstart"><div><b>📝 Trắc nghiệm</b><div class="sub"><span id="xn"></span> · mở trang thi riêng, toàn màn hình</div></div><button class="btn" id="xgo">Làm bài trắc nghiệm →</button></div>';
 var XBAR='<div id="xbar"><button id="xexit">← Thoát bài thi</button><b id="xt"></b></div><button id="xfab">📝 Làm bài trắc nghiệm</button>';
@@ -399,6 +412,21 @@ function patchDoc(h){
 window.addEventListener("message",function(e){var d=e.data;if(!d||d.yt!=="full")return;
   var ok=false;for(var k in frames)if(frames[k].contentWindow===e.source)ok=true;if(!ok)return;
   document.body.classList.toggle("full",!!d.on)});
+function ytSave(sheet,r,cb){
+  if(!USER){cb(false);return}
+  r.sheet=sheet;r.u=USER.u;r.name=USER.name;r.at=new Date().toLocaleString("vi-VN");r.ts=Date.now();
+  try{fetch(SHEET_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(r)}).then(function(){cb(true)},function(){cb(false)})}catch(e){cb(false)}}
+function saveTong(){
+  var N=E.qs.length,ok=0,by={},L="ABCD",ans=[];
+  E.qs.forEach(function(q,i){var a=E.ans[i],c=a===q.c;if(c)ok++;var b=by[q.id]||(by[q.id]={n:0,ok:0});b.n++;if(c)b.ok++;ans.push(q.id+":"+(a===undefined?"-":L[a])+(c?"✓":"✗"))});
+  var det=Object.keys(by).map(function(k){var m=find(k);return(m?m.short:k)+" "+by[k].ok+"/"+by[k].n}).join("; ");
+  var w=$("exam").querySelector(".xw"),p=document.createElement("div");p.className="sub";p.textContent="☁️ Đang lưu kết quả vào hệ thống…";if(w)w.insertBefore(p,w.children[2]||null);
+  ytSave("ThiTongHop",{score:ok,total:N,mode:E.mode==="t"?"Thi tính giờ":"Luyện tập",secs:Math.round(E.secs||0),ans:ans,extra:det},function(s){p.textContent=s?"✅ Đã gửi kết quả vào Google Sheets.":"⚠️ Chưa gửi được kết quả (lỗi mạng). Kết quả bài này chưa được ghi."})}
+window.addEventListener("message",function(e){var d=e.data;if(!d||d.yt!=="result"||!d.r)return;
+  var id=null;for(var k in frames)if(frames[k].contentWindow===e.source)id=k;if(!id||id==="dd")return;
+  var x=d.r,src=e.source;
+  var r={score:+x.score||0,total:+x.total||0,mode:String(x.mode||"").slice(0,120),secs:+x.secs||0,ans:(Array.isArray(x.ans)?x.ans:[]).slice(0,500).map(function(s){return String(s).slice(0,40)}),extra:String(x.extra||"").slice(0,1500)};
+  ytSave(id.toUpperCase(),r,function(ok){try{src.postMessage({yt:"saved",ok:ok},"*")}catch(err){}})});
 function panel(p){["gate","tc","lock","ot"].forEach(function(k){$(k).classList.toggle("on",k===p)});
   $("tabs").classList.toggle("on",p!=="gate");$("tt").textContent=p==="tc"?"🔎 Tra cứu":"📚 Ôn tập"}
 function route(){var h=location.hash.slice(1);
