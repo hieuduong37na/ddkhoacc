@@ -311,13 +311,14 @@ function loadCD(){if(CDF)return;var f=document.createElement("iframe");f.id="cdf
   f.onload=function(){var m=$("cdmsg");if(m)m.style.display="none"};
   $("cd").appendChild(f);CDF=f}
 var CMEF=null,CMEL=false,CMEP=null,CMEAUTH=null,CME_API="https://script.google.com/macros/s/AKfycbyt-qFV7hasBveU7E30xLPxF7OyJXdb6JsjblAmwXU4ea8R018Mm4e6H-u8H0qb0HHi/exec";
-function cmeStore(){try{if(CMEAUTH)sessionStorage.setItem("cmeAuth",JSON.stringify(CMEAUTH));else sessionStorage.removeItem("cmeAuth")}catch(e){}}
+function cmeStore(){try{if(CMEAUTH){var j=JSON.stringify(CMEAUTH);if(REM){localStorage.setItem("cmeAuth",j);sessionStorage.removeItem("cmeAuth")}else{sessionStorage.setItem("cmeAuth",j);localStorage.removeItem("cmeAuth")}}else{sessionStorage.removeItem("cmeAuth");localStorage.removeItem("cmeAuth")}}catch(e){}}
 function syncCME(u,p){
   CMEAUTH=null;
-  CMEP=fetch(CME_API,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({action:"login",username:u,password:p})})
-    .then(function(r){return r.json()})
-    .then(function(j){if((j.success||j.status==="success")&&j.user&&j.session){CMEAUTH={user:j.user,session:j.session};cmeStore()}})
-    .catch(function(){});
+  var body=JSON.stringify({action:"login",username:u,password:p,remember:!!REM});
+  var once=function(){return fetch(CME_API,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:body}).then(function(r){return r.json()})};
+  var ok=function(j){if(j&&(j.success||j.status==="success")&&j.user&&j.session){CMEAUTH={user:j.user,session:j.session};cmeStore();return true}
+    if(j&&j.message)console.warn("CME:",j.message);return false};
+  CMEP=once().then(ok).catch(function(){return once().then(ok).catch(function(){})});
   return CMEP}
 function cmeClear(){
   var tok=CMEAUTH&&CMEAUTH.session&&(CMEAUTH.session.token||CMEAUTH.session);
@@ -355,7 +356,7 @@ function loadUser(){var k;
   return null}
 function clearUser(){try{localStorage.removeItem("ytUser")}catch(e){}try{sessionStorage.removeItem("ytUser")}catch(e){}}
 USER=loadUser();
-if(USER){try{var _c=sessionStorage.getItem("cmeAuth");if(_c)CMEAUTH=JSON.parse(_c)}catch(e){}}
+if(USER){try{var _c=sessionStorage.getItem("cmeAuth")||localStorage.getItem("cmeAuth");if(_c){CMEAUTH=JSON.parse(_c);var _ex=CMEAUTH&&CMEAUTH.session&&CMEAUTH.session.expiresAt;if(_ex&&_ex<Date.now()){CMEAUTH=null;cmeStore()}}}catch(e){}}
 function ddDoc(){var p=USER?{u:USER.u,name:USER.name,admin:!!USER.admin,must:false}:null;
   return NURSE_HTML.replace("/*__PRE__*/",function(){return "var PRE="+JSON.stringify(p).replace(/</g,"\\u003c")+";"})}
 function who(){var on=!!USER;$("who").classList.toggle("on",on);if(on)$("wn").textContent="👤 "+(USER.name||USER.u);
