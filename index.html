@@ -180,6 +180,11 @@ body.full #stage{position:fixed;inset:0;z-index:300;background:var(--bg)}
 #bm .bmx{margin-top:24px;padding:20px;border:1.5px dashed var(--bd);border-radius:12px;background:var(--card);color:var(--mu)}
 #bm .bmx b{color:var(--tx)}
 #bm .bmtip{margin-top:26px;padding:14px 16px;border-radius:12px;background:var(--ac2);font-size:.9rem;color:var(--tx)}
+#bm .bmad{margin-top:14px;padding:14px 16px;border:1.5px solid var(--bd);border-radius:12px;background:var(--card);display:grid;gap:10px}
+#bm .bmad p{margin:0;color:var(--mu);font-size:.9rem}
+#bm .bmad input[type=file]{font:inherit;font-size:.9rem;color:var(--tx);max-width:100%}
+#bm .bmb.del{border-color:var(--bm-p);color:var(--bm-p)}
+#bm button.bmb:disabled{opacity:.6;cursor:wait}
 @media(max-width:560px){#bm .bmr{flex-wrap:wrap}#bm .bma{width:100%}#bm .bma .bmb{flex:1;text-align:center}}
 </style>
 </head>
@@ -512,43 +517,133 @@ window.addEventListener("message",function(e){var d=e.data;if(!d||d.yt!=="result
   var r={score:+x.score||0,total:+x.total||0,mode:String(x.mode||"").slice(0,120),secs:+x.secs||0,ans:(Array.isArray(x.ans)?x.ans:[]).slice(0,500).map(function(s){return String(s).slice(0,40)}),extra:String(x.extra||"").slice(0,1500)};
   ytSave(id.toUpperCase(),r,function(ok){try{src.postMessage({yt:"saved",ok:ok},"*")}catch(err){}})});
 /* ===== Biểu mẫu in nhanh =====
-   Thêm biểu mẫu: đặt file vào thư mục "bieumau" cạnh index.html rồi thêm 1 dòng vào BIEU_MAU.
+   - Quản trị viên CME tải file lên ngay trên trang: file lưu NGUYÊN BẢN trên Google Drive (không đổi định dạng).
+   - Biểu mẫu đặt sẵn trong thư mục "bieumau" (tùy chọn) khai báo ở BIEU_MAU bên dưới.
    { ten:"Tên hiển thị", nhom:"Nhóm", file:"bieumau/ten-file.docx", mota:"Ghi chú ngắn (tùy chọn)" }   */
 var BIEU_MAU=[
-  // { ten:"Giấy cam đoan phẫu thuật", nhom:"Hồ sơ bệnh án", file:"bieumau/giay-cam-doan-phau-thuat.docx", mota:"Khổ A4, in 1 mặt" },
-  // { ten:"Bảng theo dõi dịch truyền", nhom:"Điều dưỡng", file:"bieumau/theo-doi-dich-truyen.xlsx" },
+  // { ten:"Giấy cam đoan phẫu thuật", nhom:"Hồ sơ bệnh án", file:"bieumau/giay-cam-doan-phau-thuat.docx", mota:"Khổ A4" },
 ];
-var BMST={q:"",g:""},BMOK=false;
+var BM_MAX=8*1024*1024;
+var BMST={q:"",g:""},BMOK=false,BMREM=[],BMBUSY=false,BMLOADED=false,BMERR="",BMW=false,BMADM="";
 function bmEsc(x){return String(x==null?"":x).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
 function bmND(x){return String(x||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/đ/g,"d").replace(/Đ/g,"D").toLowerCase()}
 function bmExt(f){var m=/\.([a-z0-9]+)(?:\?.*)?$/i.exec(f||"");return m?m[1].toLowerCase():""}
-function bmKind(e){if(e==="docx"||e==="doc")return{c:"w",l:"DOC"};if(e==="xlsx"||e==="xls"||e==="csv")return{c:"x",l:"XLS"};if(e==="pdf")return{c:"p",l:"PDF"};return{c:"",l:(e||"FILE").slice(0,4).toUpperCase()}}
-function bmGroups(){var seen={},a=[];BIEU_MAU.forEach(function(b){var g=b.nhom||"Khác";if(!seen[g]){seen[g]=1;a.push(g)}});return a}
+function bmKind(e){if(e==="docx"||e==="doc"||e==="dot"||e==="dotx")return{c:"w",l:"DOC"};if(e==="xlsx"||e==="xls"||e==="xlsm"||e==="xlt"||e==="xltx"||e==="csv")return{c:"x",l:"XLS"};if(e==="pdf")return{c:"p",l:"PDF"};return{c:"",l:(e||"FILE").slice(0,4).toUpperCase()}}
+function bmSize(n){n=+n||0;if(!n)return"";return n>=1048576?(Math.round(n/104857.6)/10).toString().replace(".",",")+" MB":Math.max(1,Math.round(n/1024))+" KB"}
+function bmApi(b){return fetch(CME_API,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(b)}).then(function(r){return r.json()})}
+function bmIsAdmin(){return !!(CMEAUTH&&CMEAUTH.user&&CMEAUTH.user.role==="admin"&&CMEAUTH.session&&CMEAUTH.session.token)}
+function bmAll(){
+  var a=BIEU_MAU.map(function(b){return{ten:b.ten,nhom:b.nhom,mota:b.mota,file:b.file,ext:bmExt(b.file)}});
+  BMREM.forEach(function(r){a.push({id:r.id,ten:r.title,nhom:r.group,mota:r.description,ext:r.ext,size:r.size,remote:true})});
+  return a}
+function bmGroups(){var seen={},a=[];bmAll().forEach(function(b){var g=b.nhom||"Khác";if(!seen[g]){seen[g]=1;a.push(g)}});return a}
 function bmChips(){var gs=bmGroups(),el=$("bmch");if(!el)return;
   if(gs.length<2){el.innerHTML="";return}
   var h='<button class="bmc" data-g="" aria-pressed="'+(BMST.g===""?"true":"false")+'">Tất cả</button>';
   gs.forEach(function(g){h+='<button class="bmc" data-g="'+bmEsc(g)+'" aria-pressed="'+(BMST.g===g?"true":"false")+'">'+bmEsc(g)+'</button>'});
   el.innerHTML=h;
   Array.prototype.forEach.call(el.querySelectorAll(".bmc"),function(b){b.onclick=function(){BMST.g=b.getAttribute("data-g");bmChips();bmList()}})}
-function bmRow(b){var e=bmExt(b.file),k=bmKind(e),href=encodeURI(b.file||"#");
-  var acts=e==="pdf"?'<a class="bmb" href="'+href+'" target="_blank" rel="noopener">Mở để in</a><a class="bmb alt" href="'+href+'" download>Tải về</a>':'<a class="bmb" href="'+href+'" download>Tải về</a>';
-  return'<li class="bmr"><div class="bme '+k.c+'" aria-hidden="true">'+bmEsc(k.l)+'</div><div class="bmf"><div class="bmt">'+bmEsc(b.ten||b.file)+'</div>'+(b.mota?'<div class="bmd">'+bmEsc(b.mota)+'</div>':'')+'</div><div class="bma">'+acts+'</div></li>'}
+function bmRow(b){
+  var k=bmKind(b.ext),acts,id=bmEsc(b.id||"");
+  if(b.remote){
+    acts='<button class="bmb" data-act="dl" data-id="'+id+'">Tải về</button>';
+    if(b.ext==="pdf")acts='<button class="bmb" data-act="open" data-id="'+id+'">Mở để in</button><button class="bmb alt" data-act="dl" data-id="'+id+'">Tải về</button>';
+    if(bmIsAdmin())acts+='<button class="bmb alt del" data-act="del" data-id="'+id+'" data-t="'+bmEsc(b.ten)+'">Xóa</button>';
+  }else{
+    var href=encodeURI(b.file||"#");
+    acts=b.ext==="pdf"?'<a class="bmb" href="'+href+'" target="_blank" rel="noopener">Mở để in</a><a class="bmb alt" href="'+href+'" download>Tải về</a>':'<a class="bmb" href="'+href+'" download>Tải về</a>';
+  }
+  var meta=[b.mota,bmSize(b.size)].filter(Boolean).join(" · ");
+  return'<li class="bmr"><div class="bme '+k.c+'" aria-hidden="true">'+bmEsc(k.l)+'</div><div class="bmf"><div class="bmt">'+bmEsc(b.ten||b.file)+'</div>'+(meta?'<div class="bmd">'+bmEsc(meta)+'</div>':'')+'</div><div class="bma">'+acts+'</div></li>'}
 function bmList(){var out=$("bmout"),cnt=$("bmcnt");if(!out)return;
-  if(!BIEU_MAU.length){cnt.textContent="";out.innerHTML='<div class="bmx"><b>Chưa có biểu mẫu nào.</b><br>Quản trị viên đặt file vào thư mục bieumau rồi thêm vào danh sách BIEU_MAU trong file index.html.</div>';return}
+  var all=bmAll();
+  if(!all.length){
+    cnt.textContent="";
+    if(!BMLOADED){out.innerHTML='<div class="bmx">Đang tải danh sách biểu mẫu…</div>';return}
+    out.innerHTML='<div class="bmx"><b>Chưa có biểu mẫu nào.</b><br>'+(BMERR?bmEsc(BMERR):(bmIsAdmin()?'Dùng khung Thêm biểu mẫu ở trên để tải file lên.':'Quản trị viên sẽ bổ sung biểu mẫu sau.'))+'</div>';return}
   var q=bmND(BMST.q.trim());
-  var list=BIEU_MAU.filter(function(b){if(BMST.g&&(b.nhom||"Khác")!==BMST.g)return false;if(!q)return true;return bmND([b.ten,b.nhom,b.mota,b.file].join(" ")).indexOf(q)>=0});
-  cnt.textContent=list.length+" biểu mẫu";
+  var list=all.filter(function(b){if(BMST.g&&(b.nhom||"Khác")!==BMST.g)return false;if(!q)return true;return bmND([b.ten,b.nhom,b.mota,b.file].join(" ")).indexOf(q)>=0});
+  cnt.textContent=list.length+" biểu mẫu"+(BMERR?" (không tải được phần lưu trên máy chủ)":"");
   if(!list.length){out.innerHTML='<div class="bmx"><b>Không có biểu mẫu khớp "'+bmEsc(BMST.q)+'".</b><br>Thử gõ ít từ hơn hoặc chọn nhóm Tất cả.</div>';return}
   var by={},order=[];list.forEach(function(b){var g=b.nhom||"Khác";if(!by[g]){by[g]=[];order.push(g)}by[g].push(b)});
   var h="";order.forEach(function(g){h+='<section class="bmg"><h2>'+bmEsc(g)+'</h2><ul class="bml">'+by[g].map(bmRow).join("")+'</ul></section>'});
   out.innerHTML=h}
-function loadBM(){if(BMOK)return;BMOK=true;
-  $("bm").innerHTML='<div class="bmw"><div class="bmi"><h1>Biểu mẫu in nhanh</h1><p class="bms">Chọn biểu mẫu, bấm Tải về, mở file rồi in.</p>'
-   +'<div class="bmbar"><input id="bmq" class="bmq" type="search" placeholder="Tìm biểu mẫu theo tên hoặc nhóm" aria-label="Tìm biểu mẫu" autocomplete="off"><div class="bmch" id="bmch" role="group" aria-label="Lọc theo nhóm"></div></div>'
-   +'<div class="bmn" id="bmcnt" aria-live="polite"></div><div id="bmout"></div>'
-   +'<p class="bmtip">Mẹo in: file Word và Excel mở bằng Microsoft Office hoặc Google Docs/Sheets. File PDF bấm Mở để in rồi nhấn Ctrl + P.</p></div></div>';
-  $("bmq").oninput=function(){BMST.q=this.value;bmList()};
-  bmChips();bmList()}
+function bmFetch(){
+  return bmApi({action:"listTemplates"}).then(function(j){
+    if(j&&j.success&&Array.isArray(j.data)){BMREM=j.data;BMERR=""}else BMERR=(j&&j.message)||"Máy chủ biểu mẫu chưa sẵn sàng."})
+  .catch(function(){BMERR="Không kết nối được máy chủ biểu mẫu."})
+  .then(function(){BMLOADED=true;bmAdmin();bmChips();bmAdminFill();bmList()})}
+function bmDownload(id,btn,open){
+  var w=null;if(open){try{w=window.open("","_blank")}catch(e){}}
+  var old=btn.textContent;btn.disabled=true;btn.textContent="Đang tải…";
+  bmApi({action:"getTemplateFile",id:id}).then(function(j){
+    if(!j||!j.success)throw new Error((j&&j.message)||"Lỗi máy chủ");
+    var bin=atob(j.data),n=bin.length,u=new Uint8Array(n);for(var i=0;i<n;i++)u[i]=bin.charCodeAt(i);
+    var blob=new Blob([u],{type:j.mime||"application/octet-stream"}),url=URL.createObjectURL(blob);
+    if(open&&w){w.location.href=url}
+    else{var a=document.createElement("a");a.href=url;a.download=j.name||"bieumau";document.body.appendChild(a);a.click();a.remove()}
+    setTimeout(function(){URL.revokeObjectURL(url)},60000)})
+  .catch(function(e){if(w){try{w.close()}catch(x){}}alert("Không tải được biểu mẫu: "+(e.message||e))})
+  .then(function(){btn.disabled=false;btn.textContent=old})}
+function bmDelete(id,t){
+  if(!bmIsAdmin())return;if(!confirm('Xóa biểu mẫu "'+t+'"?'))return;
+  bmApi({action:"deleteTemplate",token:CMEAUTH.session.token,id:id}).then(function(j){
+    if(!j||!j.success)alert((j&&j.message)||"Không xóa được biểu mẫu.");return bmFetch()})
+  .catch(function(){alert("Lỗi mạng, chưa xóa được.")})}
+function bmRead(f){return new Promise(function(res,rej){var r=new FileReader();r.onload=function(){res(String(r.result).split(",")[1]||"")};r.onerror=function(){rej(r.error)};r.readAsDataURL(f)})}
+function bmUpload(){
+  if(BMBUSY)return;var files=$("bmfile").files;
+  if(!files||!files.length){$("bmst").textContent="Hãy chọn ít nhất một file.";return}
+  var grp=$("bmgrp").value.trim()||"Khác",dsc=$("bmdsc").value.trim(),ttl=$("bmttl").value.trim();
+  var list=Array.prototype.slice.call(files),ok=0,errs=[];BMBUSY=true;$("bmup").disabled=true;
+  function step(i){
+    if(i>=list.length){BMBUSY=false;$("bmup").disabled=false;
+      $("bmst").textContent="Đã tải lên "+ok+"/"+list.length+" file."+(errs.length?" Lỗi: "+errs.join("; "):"");
+      if(ok){$("bmfile").value="";$("bmttl").value=""}
+      return bmFetch()}
+    var f=list[i];$("bmst").textContent="Đang tải lên "+(i+1)+"/"+list.length+": "+f.name+"…";
+    if(f.size>BM_MAX){errs.push(f.name+" quá lớn (tối đa 8 MB)");return step(i+1)}
+    return bmRead(f).then(function(b64){
+      return bmApi({action:"uploadTemplate",token:CMEAUTH.session.token,fileName:f.name,mime:f.type||"",data:b64,title:list.length===1?ttl:"",group:grp,description:dsc})})
+    .then(function(j){if(j&&j.success)ok++;else errs.push(f.name+": "+((j&&j.message)||"lỗi"))})
+    .catch(function(){errs.push(f.name+": lỗi mạng")})
+    .then(function(){return step(i+1)})}
+  step(0)}
+function bmAdminFill(){var dl=$("bmgl");if(!dl)return;dl.innerHTML=bmGroups().map(function(g){return'<option value="'+bmEsc(g)+'">'}).join("")}
+function bmAdmin(force){var el=$("bmadm");if(!el)return;
+  var st=bmIsAdmin()?"a":(BMW&&USER&&!CMEAUTH)?"w":(CMEAUTH&&CMEAUTH.user)?"u":USER?"l":"g";
+  if(!force&&st===BMADM&&el.innerHTML)return;BMADM=st;
+  if(st==="a"){
+    el.innerHTML='<div class="bmad"><b>Thêm biểu mẫu</b><p>Chọn file Word, Excel hoặc PDF (mỗi file tối đa 8 MB). File được lưu nguyên bản, giữ nguyên định dạng của mẫu.</p>'
+      +'<input id="bmfile" type="file" multiple accept=".doc,.docx,.dot,.dotx,.xls,.xlsx,.xlsm,.xlt,.xltx,.pdf,.csv,.ppt,.pptx" aria-label="Chọn file biểu mẫu">'
+      +'<input id="bmttl" class="bmq" placeholder="Tên hiển thị (để trống: lấy theo tên file)" aria-label="Tên hiển thị">'
+      +'<input id="bmgrp" class="bmq" list="bmgl" placeholder="Nhóm, ví dụ: Hồ sơ bệnh án" aria-label="Nhóm"><datalist id="bmgl"></datalist>'
+      +'<input id="bmdsc" class="bmq" placeholder="Ghi chú ngắn (không bắt buộc)" aria-label="Ghi chú">'
+      +'<div><button class="bmb" id="bmup">Tải lên</button></div><div id="bmst" class="bmn" aria-live="polite"></div></div>';
+    $("bmup").onclick=bmUpload;bmAdminFill();
+  }else if(st==="w"){
+    el.innerHTML='<div class="bmad"><p>Đang kết nối tài khoản quản trị CME…</p></div>';
+  }else if(st==="u"){
+    el.innerHTML='<div class="bmad"><p>Tài khoản này chưa có quyền quản trị trong CME nên chưa thêm được biểu mẫu. Hãy nhờ quản trị viên cấp quyền admin cho tài khoản trong bảng USERS của CME.</p></div>';
+  }else if(st==="l"){
+    el.innerHTML='<div class="bmad"><p>Chưa kết nối được phiên CME cho tài khoản này. Hãy đăng xuất rồi đăng nhập lại; nếu vẫn không được, kiểm tra đã triển khai bản mới của máy chủ CME.</p></div>';
+  }else{
+    el.innerHTML='<div class="bmad"><p>Quản trị viên: đăng nhập để thêm biểu mẫu.</p><div><button class="bmb alt" id="bmlg">Đăng nhập</button></div></div>';
+    $("bmlg").onclick=function(){go("ontap")};
+  }}
+function loadBM(){
+  if(!BMOK){BMOK=true;
+    $("bm").innerHTML='<div class="bmw"><div class="bmi"><h1>Biểu mẫu in nhanh</h1><p class="bms">Chọn biểu mẫu, bấm Tải về, mở file rồi in.</p>'
+     +'<div id="bmadm"></div>'
+     +'<div class="bmbar"><input id="bmq" class="bmq" type="search" placeholder="Tìm biểu mẫu theo tên hoặc nhóm" aria-label="Tìm biểu mẫu" autocomplete="off"><div class="bmch" id="bmch" role="group" aria-label="Lọc theo nhóm"></div></div>'
+     +'<div class="bmn" id="bmcnt" aria-live="polite"></div><div id="bmout"></div>'
+     +'<p class="bmtip">Mẹo in: file Word và Excel mở bằng Microsoft Office hoặc Google Docs/Sheets. File PDF bấm Mở để in rồi nhấn Ctrl + P.</p></div></div>';
+    $("bmq").oninput=function(){BMST.q=this.value;bmList()};
+    $("bmout").onclick=function(e){var b=e.target.closest&&e.target.closest("button[data-act]");if(!b)return;
+      var id=b.getAttribute("data-id"),act=b.getAttribute("data-act");
+      if(act==="dl")bmDownload(id,b,false);else if(act==="open")bmDownload(id,b,true);else if(act==="del")bmDelete(id,b.getAttribute("data-t"))}}
+  BMW=true;bmAdmin();bmChips();bmList();bmFetch();
+  Promise.resolve(CMEP).then(function(){BMW=false;bmAdmin();bmList()},function(){BMW=false;bmAdmin();bmList()})}
 function panel(p){["gate","tc","cd","cme","bm","lock","ot"].forEach(function(k){$(k).classList.toggle("on",k===p)});
   $("tabs").classList.toggle("on",p!=="gate");$("tt").textContent=p==="tc"?"🔎 Tra cứu":p==="cd"?"📋 Chẩn đoán điều dưỡng":p==="cme"?"🎓 Quản lý CME":p==="bm"?"🖨️ Biểu mẫu in nhanh":"📚 Ôn tập"}
 function route(){var h=location.hash.slice(1);
