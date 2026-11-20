@@ -128,8 +128,8 @@ body.full #tabs{display:none!important}
 body.full #stage{position:fixed;inset:0;z-index:300;background:var(--bg)}
 #gwho{text-align:center;color:var(--mu);font-size:.9rem;margin:20px 0 0;min-height:1.6em}
 .hbtn{border:1px solid var(--bd);background:var(--bg);color:var(--ac);border-radius:9px;padding:5px 10px;font:inherit;font-size:.85rem;font-weight:600;cursor:pointer;white-space:nowrap}
-#tc,#cd,#cme{display:none;flex:1;min-height:0;flex-direction:column;background:var(--bg)}
-#tc.on,#cd.on,#cme.on{display:flex}
+#tc,#cd,#cme,#bm{display:none;flex:1;min-height:0;flex-direction:column;background:var(--bg)}
+#tc.on,#cd.on,#cme.on,#bm.on{display:flex}
 #tcf,#cdf,#cmef{flex:1;min-height:0;width:100%;border:0;background:var(--bg)}
 #ot{display:none;flex:1;min-height:0}
 #ot.on{display:flex}
@@ -147,6 +147,40 @@ body.full #stage{position:fixed;inset:0;z-index:300;background:var(--bg)}
 .lc .xb{width:100%;margin-top:16px}
 .lc .xb.g{margin-top:8px}
 @media(max-width:520px){#wn{max-width:80px}#tt{font-size:.9rem}}
+#bm{--bmb:#fff;--bm-w:#2b579a;--bm-wb:#e6eef9;--bm-x:#1d6f42;--bm-xb:#e3f3ea;--bm-p:#b3261e;--bm-pb:#fbe9e7;--bm-o:#5b6b75;--bm-ob:#eef1f3}
+@media(prefers-color-scheme:dark){#bm{--bmb:#06201d;--bm-w:#8db4ee;--bm-wb:#1a2a45;--bm-x:#7bd1a0;--bm-xb:#173326;--bm-p:#f2a29b;--bm-pb:#3a1f1d;--bm-o:#9bb0bb;--bm-ob:#23323a}}
+#bm .bmw{flex:1;min-height:0;overflow:auto;padding:16px 16px calc(28px + env(safe-area-inset-bottom,0px))}
+#bm .bmi{max-width:860px;margin:0 auto}
+#bm h1{margin:0;font-size:1.45rem;line-height:1.25}
+#bm .bms{margin:4px 0 0;color:var(--mu);font-size:.95rem}
+#bm .bmbar{position:sticky;top:-16px;z-index:2;margin:12px -16px 0;padding:10px 16px;background:var(--bg);border-bottom:1px solid var(--bd)}
+#bm .bmq{width:100%;font:inherit;padding:12px 14px;border-radius:10px;border:1.5px solid var(--bd);background:var(--card);color:var(--tx)}
+#bm .bmq:focus{outline:3px solid var(--ac2);border-color:var(--ac)}
+#bm .bmch{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+#bm .bmc{font:inherit;font-size:.88rem;padding:6px 12px;border-radius:999px;cursor:pointer;border:1px solid var(--bd);background:var(--card);color:var(--tx)}
+#bm .bmc:hover{border-color:var(--ac)}
+#bm .bmc[aria-pressed="true"]{background:var(--ac);border-color:var(--ac);color:var(--bmb)}
+#bm .bmc:focus-visible,#bm .bmb:focus-visible{outline:3px solid var(--ac);outline-offset:2px}
+#bm .bmn{margin:12px 0 4px;color:var(--mu);font-size:.85rem}
+#bm .bmg{margin-top:20px}
+#bm .bmg h2{margin:0 0 6px;font-size:1rem}
+#bm .bml{list-style:none;margin:0;padding:0;border:1px solid var(--bd);border-radius:12px;background:var(--card);overflow:hidden}
+#bm .bmr{display:flex;align-items:center;gap:12px;padding:12px 14px}
+#bm .bmr+.bmr{border-top:1px solid var(--bd)}
+#bm .bme{flex:none;width:46px;height:46px;border-radius:10px;display:grid;place-items:center;font-weight:800;font-size:.72rem;background:var(--bm-ob);color:var(--bm-o)}
+#bm .bme.w{background:var(--bm-wb);color:var(--bm-w)}
+#bm .bme.x{background:var(--bm-xb);color:var(--bm-x)}
+#bm .bme.p{background:var(--bm-pb);color:var(--bm-p)}
+#bm .bmf{flex:1;min-width:0}
+#bm .bmt{font-weight:600;overflow-wrap:anywhere}
+#bm .bmd{color:var(--mu);font-size:.88rem;overflow-wrap:anywhere}
+#bm .bma{display:flex;gap:8px;flex:none}
+#bm .bmb{font:inherit;font-size:.9rem;font-weight:600;text-decoration:none;cursor:pointer;padding:9px 14px;border-radius:9px;border:1.5px solid var(--ac);background:var(--ac);color:var(--bmb);white-space:nowrap;display:inline-block}
+#bm .bmb.alt{background:transparent;color:var(--ac)}
+#bm .bmx{margin-top:24px;padding:20px;border:1.5px dashed var(--bd);border-radius:12px;background:var(--card);color:var(--mu)}
+#bm .bmx b{color:var(--tx)}
+#bm .bmtip{margin-top:26px;padding:14px 16px;border-radius:12px;background:var(--ac2);font-size:.9rem;color:var(--tx)}
+@media(max-width:560px){#bm .bmr{flex-wrap:wrap}#bm .bma{width:100%}#bm .bma .bmb{flex:1;text-align:center}}
 </style>
 </head>
 <body>
@@ -156,10 +190,12 @@ body.full #stage{position:fixed;inset:0;z-index:300;background:var(--bg)}
 <button class="gc" id="g-cd"><div class="gi">📋</div><h2>Chẩn đoán điều dưỡng</h2><p>Tra cứu theo ICD-10: chẩn đoán điều dưỡng, phân cấp chăm sóc và các hoạt động chăm sóc theo từng bệnh (75 bệnh, 93 chẩn đoán).</p><span class="gt">Mở tra cứu →</span></button>
 <button class="gc" id="g-ot"><div class="gi">📚</div><h2>Ôn tập</h2><p>Ôn thi lại theo đề cương Thi Điều dưỡng 2025, tóm tắt và trắc nghiệm 7 văn bản pháp quy, thi tổng hợp. Cần đăng nhập 🔒</p><span class="gt">Vào ôn tập →</span></button>
 <button class="gc" id="g-cme"><div class="gi">🎓</div><h2>Quản lý CME</h2><p>Hệ thống quản lý đào tạo liên tục (CME): theo dõi, cập nhật và tổng hợp giờ/điểm đào tạo liên tục. Cần đăng nhập 🔒</p><span class="gt">Mở CME →</span></button>
+<button class="gc" id="g-bm"><div class="gi">🖨️</div><h2>Biểu mẫu in nhanh</h2><p>Kho biểu mẫu Word, Excel, PDF làm sẵn: chọn, tải về và in ngay khi cần.</p><span class="gt">Mở biểu mẫu →</span></button>
 </div><p id="gwho"></p></div></div>
 <div id="tc"><div id="tcmsg" style="padding:20px;color:var(--mu)">Đang tải…</div></div>
 <div id="cd"><div id="cdmsg" style="padding:20px;color:var(--mu)">Đang tải…</div></div>
 <div id="cme"><div id="cmemsg" style="padding:20px;color:var(--mu)">Đang tải…</div></div>
+<div id="bm"></div>
 <div id="lock"></div>
 <div id="ot">
 <aside id="nav"></aside>
@@ -475,19 +511,59 @@ window.addEventListener("message",function(e){var d=e.data;if(!d||d.yt!=="result
   var x=d.r,src=e.source;
   var r={score:+x.score||0,total:+x.total||0,mode:String(x.mode||"").slice(0,120),secs:+x.secs||0,ans:(Array.isArray(x.ans)?x.ans:[]).slice(0,500).map(function(s){return String(s).slice(0,40)}),extra:String(x.extra||"").slice(0,1500)};
   ytSave(id.toUpperCase(),r,function(ok){try{src.postMessage({yt:"saved",ok:ok},"*")}catch(err){}})});
-function panel(p){["gate","tc","cd","cme","lock","ot"].forEach(function(k){$(k).classList.toggle("on",k===p)});
-  $("tabs").classList.toggle("on",p!=="gate");$("tt").textContent=p==="tc"?"🔎 Tra cứu":p==="cd"?"📋 Chẩn đoán điều dưỡng":p==="cme"?"🎓 Quản lý CME":"📚 Ôn tập"}
+/* ===== Biểu mẫu in nhanh =====
+   Thêm biểu mẫu: đặt file vào thư mục "bieumau" cạnh index.html rồi thêm 1 dòng vào BIEU_MAU.
+   { ten:"Tên hiển thị", nhom:"Nhóm", file:"bieumau/ten-file.docx", mota:"Ghi chú ngắn (tùy chọn)" }   */
+var BIEU_MAU=[
+  // { ten:"Giấy cam đoan phẫu thuật", nhom:"Hồ sơ bệnh án", file:"bieumau/giay-cam-doan-phau-thuat.docx", mota:"Khổ A4, in 1 mặt" },
+  // { ten:"Bảng theo dõi dịch truyền", nhom:"Điều dưỡng", file:"bieumau/theo-doi-dich-truyen.xlsx" },
+];
+var BMST={q:"",g:""},BMOK=false;
+function bmEsc(x){return String(x==null?"":x).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
+function bmND(x){return String(x||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/đ/g,"d").replace(/Đ/g,"D").toLowerCase()}
+function bmExt(f){var m=/\.([a-z0-9]+)(?:\?.*)?$/i.exec(f||"");return m?m[1].toLowerCase():""}
+function bmKind(e){if(e==="docx"||e==="doc")return{c:"w",l:"DOC"};if(e==="xlsx"||e==="xls"||e==="csv")return{c:"x",l:"XLS"};if(e==="pdf")return{c:"p",l:"PDF"};return{c:"",l:(e||"FILE").slice(0,4).toUpperCase()}}
+function bmGroups(){var seen={},a=[];BIEU_MAU.forEach(function(b){var g=b.nhom||"Khác";if(!seen[g]){seen[g]=1;a.push(g)}});return a}
+function bmChips(){var gs=bmGroups(),el=$("bmch");if(!el)return;
+  if(gs.length<2){el.innerHTML="";return}
+  var h='<button class="bmc" data-g="" aria-pressed="'+(BMST.g===""?"true":"false")+'">Tất cả</button>';
+  gs.forEach(function(g){h+='<button class="bmc" data-g="'+bmEsc(g)+'" aria-pressed="'+(BMST.g===g?"true":"false")+'">'+bmEsc(g)+'</button>'});
+  el.innerHTML=h;
+  Array.prototype.forEach.call(el.querySelectorAll(".bmc"),function(b){b.onclick=function(){BMST.g=b.getAttribute("data-g");bmChips();bmList()}})}
+function bmRow(b){var e=bmExt(b.file),k=bmKind(e),href=encodeURI(b.file||"#");
+  var acts=e==="pdf"?'<a class="bmb" href="'+href+'" target="_blank" rel="noopener">Mở để in</a><a class="bmb alt" href="'+href+'" download>Tải về</a>':'<a class="bmb" href="'+href+'" download>Tải về</a>';
+  return'<li class="bmr"><div class="bme '+k.c+'" aria-hidden="true">'+bmEsc(k.l)+'</div><div class="bmf"><div class="bmt">'+bmEsc(b.ten||b.file)+'</div>'+(b.mota?'<div class="bmd">'+bmEsc(b.mota)+'</div>':'')+'</div><div class="bma">'+acts+'</div></li>'}
+function bmList(){var out=$("bmout"),cnt=$("bmcnt");if(!out)return;
+  if(!BIEU_MAU.length){cnt.textContent="";out.innerHTML='<div class="bmx"><b>Chưa có biểu mẫu nào.</b><br>Quản trị viên đặt file vào thư mục bieumau rồi thêm vào danh sách BIEU_MAU trong file index.html.</div>';return}
+  var q=bmND(BMST.q.trim());
+  var list=BIEU_MAU.filter(function(b){if(BMST.g&&(b.nhom||"Khác")!==BMST.g)return false;if(!q)return true;return bmND([b.ten,b.nhom,b.mota,b.file].join(" ")).indexOf(q)>=0});
+  cnt.textContent=list.length+" biểu mẫu";
+  if(!list.length){out.innerHTML='<div class="bmx"><b>Không có biểu mẫu khớp "'+bmEsc(BMST.q)+'".</b><br>Thử gõ ít từ hơn hoặc chọn nhóm Tất cả.</div>';return}
+  var by={},order=[];list.forEach(function(b){var g=b.nhom||"Khác";if(!by[g]){by[g]=[];order.push(g)}by[g].push(b)});
+  var h="";order.forEach(function(g){h+='<section class="bmg"><h2>'+bmEsc(g)+'</h2><ul class="bml">'+by[g].map(bmRow).join("")+'</ul></section>'});
+  out.innerHTML=h}
+function loadBM(){if(BMOK)return;BMOK=true;
+  $("bm").innerHTML='<div class="bmw"><div class="bmi"><h1>Biểu mẫu in nhanh</h1><p class="bms">Chọn biểu mẫu, bấm Tải về, mở file rồi in.</p>'
+   +'<div class="bmbar"><input id="bmq" class="bmq" type="search" placeholder="Tìm biểu mẫu theo tên hoặc nhóm" aria-label="Tìm biểu mẫu" autocomplete="off"><div class="bmch" id="bmch" role="group" aria-label="Lọc theo nhóm"></div></div>'
+   +'<div class="bmn" id="bmcnt" aria-live="polite"></div><div id="bmout"></div>'
+   +'<p class="bmtip">Mẹo in: file Word và Excel mở bằng Microsoft Office hoặc Google Docs/Sheets. File PDF bấm Mở để in rồi nhấn Ctrl + P.</p></div></div>';
+  $("bmq").oninput=function(){BMST.q=this.value;bmList()};
+  bmChips();bmList()}
+function panel(p){["gate","tc","cd","cme","bm","lock","ot"].forEach(function(k){$(k).classList.toggle("on",k===p)});
+  $("tabs").classList.toggle("on",p!=="gate");$("tt").textContent=p==="tc"?"🔎 Tra cứu":p==="cd"?"📋 Chẩn đoán điều dưỡng":p==="cme"?"🎓 Quản lý CME":p==="bm"?"🖨️ Biểu mẫu in nhanh":"📚 Ôn tập"}
 function route(){var h=location.hash.slice(1);
   if(document.body.classList.contains("full")){document.body.classList.remove("full");for(var k in frames){try{frames[k].contentWindow.postMessage({yt:"exit"},"*")}catch(e){}}}
   if(h===""||h==="gate"){panel("gate");document.title="Y tế – Tra cứu & Ôn tập";return}
   if(h==="tracuu"){panel("tc");loadTC();document.title="Tra cứu y tế";return}
   if(h==="cme"){panel("cme");loadCME();document.title="Quản lý CME";return}
+  if(h==="bieumau"){panel("bm");loadBM();document.title="Biểu mẫu in nhanh";return}
   if(h==="chandoan"){panel("cd");loadCD();document.title="Tra cứu chẩn đoán điều dưỡng";return}
   if(!USER){var was=$("lock").classList.contains("on");panel("lock");if(!was)lockView();document.title="Đăng nhập – Ôn tập";return}
   LAST=h;panel("ot");show(h==="ontap"?null:h)}
 $("back").onclick=function(){go("ontap")};
 $("g-tc").onclick=function(){go("tracuu")};
 $("g-cme").onclick=function(){go("cme")};
+$("g-bm").onclick=function(){go("bieumau")};
 $("g-cd").onclick=function(){go("chandoan")};
 $("g-ot").onclick=function(){go(LAST)};
 $("gohome").onclick=function(){go("gate")};
